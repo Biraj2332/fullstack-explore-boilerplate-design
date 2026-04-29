@@ -39,6 +39,24 @@ export class AuthService {
     });
 
     this.logger.log(`register success: ${user.email} (id: ${user.id})`);
+
+    // Propagate to user-service so both DBs stay in sync
+    const userServiceUrl = process.env.USER_SERVICE_URL ?? 'http://user-service:3002';
+    try {
+      const response = await fetch(`${userServiceUrl}/api/users/profile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ authId: user.id, email: user.email }),
+      });
+      if (response.ok) {
+        this.logger.log(`user-service profile created for ${user.email}`);
+      } else {
+        this.logger.warn(`user-service profile creation returned ${response.status} for ${user.email}`);
+      }
+    } catch (e: any) {
+      this.logger.warn(`Could not reach user-service to create profile: ${e.message}`);
+    }
+
     return ok({ id: user.id, email: user.email, createdAt: user.createdAt });
   }
 
