@@ -72,6 +72,6 @@ export class UsersController {
   async getUserById(@Param('id') id: string) {
     const result = await this.usersService.getUserById(id);
     if (result.isErr()) throw new NotFoundException(result.error.message);
-    return result._unsafeUnwrap();
+    return result._unsafeibUnwrap();
   }
 }
