@@ -2,6 +2,7 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -9,6 +10,8 @@ import { Request } from 'express';
 
 @Injectable()
 export class JwtGuard implements CanActivate {
+  private readonly logger = new Logger(JwtGuard.name);
+
   constructor(private readonly jwt: JwtService) {}
 
   canActivate(context: ExecutionContext): boolean {
@@ -16,6 +19,7 @@ export class JwtGuard implements CanActivate {
     const authHeader = request.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      this.logger.warn('Rejected: Missing or malformed Authorization header');
       throw new UnauthorizedException('Missing or malformed Authorization header');
     }
 
@@ -27,7 +31,8 @@ export class JwtGuard implements CanActivate {
       });
       (request as any).user = payload;
       return true;
-    } catch {
+    } catch (e: any) {
+      this.logger.warn(`Rejected: ${e.message} (secret set: ${!!process.env.JWT_ACCESS_SECRET})`);
       throw new UnauthorizedException('Invalid or expired access token');
     }
   }

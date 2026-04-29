@@ -10,9 +10,10 @@ export class LoggingMiddleware implements NestMiddleware {
     const userAgent = req.get('user-agent') ?? '';
     const start = Date.now();
 
-    const body = req.body ? this.maskSensitive(req.body) : undefined;
+    const body = req.body && Object.keys(req.body).length ? this.maskSensitive(req.body) : undefined;
+    const auth = req.headers.authorization ? '🔑 Bearer present' : '🚫 No Auth';
     this.logger.log(
-      `→ ${method} ${originalUrl} | IP: ${ip} | Agent: ${userAgent}${body ? ` | Body: ${JSON.stringify(body)}` : ''}`,
+      `→ ${method} ${originalUrl} | IP: ${ip} | ${auth}${body ? ` | Body: ${JSON.stringify(body)}` : ''}`,
     );
 
     res.on('finish', () => {
