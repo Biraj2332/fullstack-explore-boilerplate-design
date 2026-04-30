@@ -6,9 +6,11 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Req,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
@@ -17,7 +19,7 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { AuthService } from './auth.service';
+import type { Request } from 'express';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { LoginDto } from './dto/login.dto';
 import { LogoutDto } from './dto/logout.dto';
@@ -25,17 +27,28 @@ import { RefreshDto } from './dto/refresh.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtGuard } from './guards/jwt.guard';
 
+import { RegisterCommand } from '../application/commands/register.command';
+import { LoginCommand } from '../application/commands/login.command';
+import { LogoutCommand } from '../application/commands/logout.command';
+import { RefreshTokenCommand } from '../application/commands/refresh-token.command';
+import { GetUserQuery } from '../application/queries/get-user.query';
+
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly commandBus: CommandBus,
+    private readonly queryBus: QueryBus,
+  ) {}
 
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
   @ApiCreatedResponse({ description: 'User created successfully' })
   @HttpCode(HttpStatus.CREATED)
-  async register(@Body() dto: RegisterDto) {
-    const result = await this.authService.register(dto);
+  async register(@Body() dto: RegisterDto, @Req() req: Request) {
+    const result = await this.commandBus.execute(
+      new RegisterCommand(dto.email, dto.password, req.ip, req.get('user-agent')),
+    );
     if (result.isErr()) {
       const { code, message } = result.error;
       if (code === 'EMAIL_IN_USE') throw new ConflictException(message);
@@ -48,8 +61,10 @@ export class AuthController {
   @ApiOkResponse({ description: 'Returns access and refresh tokens' })
   @ApiUnauthorizedResponse({ description: 'Invalid credentials' })
   @HttpCode(HttpStatus.OK)
-  async login(@Body() dto: LoginDto) {
-    const result = await this.authService.login(dto);
+  async login(@Body() dto: LoginDto, @Req() req: Request) {
+    const result = await this.commandBus.execute(
+      new LoginCommand(dto.email, dto.password, req.ip, req.get('user-agent')),
+    );
     if (result.isErr()) throw new UnauthorizedException(result.error.message);
     return result._unsafeUnwrap();
   }
@@ -59,8 +74,10 @@ export class AuthController {
   @ApiOkResponse({ description: 'Returns new access and refresh tokens' })
   @ApiUnauthorizedResponse({ description: 'Invalid or expired refresh token' })
   @HttpCode(HttpStatus.OK)
-  async refresh(@Body() dto: RefreshDto) {
-    const result = await this.authService.refresh(dto);
+  async refresh(@Body() dto: RefreshDto, @Req() req: Request) {
+    const result = await this.commandBus.execute(
+      new RefreshTokenCommand(dto.refreshToken, req.ip),
+    );
     if (result.isErr()) throw new UnauthorizedException(result.error.message);
     return result._unsafeUnwrap();
   }
@@ -69,18 +86,23 @@ export class AuthController {
   @ApiOperation({ summary: 'Logout and invalidate refresh token' })
   @ApiOkResponse({ description: 'Logged out successfully' })
   @HttpCode(HttpStatus.OK)
-  async logout(@Body() dto: LogoutDto) {
-    const result = await this.authService.logout(dto);
+  async logout(@Body() dto: LogoutDto, @CurrentUser() user: any) {
+    const result = await this.commandBus.execute(
+      new LogoutCommand(dto.refreshToken, user?.sub),
+    );
     return result._unsafeUnwrap();
   }
 
   @UseGuards(JwtGuard)
   @Get('me')
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Get current authenticated user (protected route)' })
+  @ApiOperation({ summary: 'Get current authenticated user' })
   @ApiOkResponse({ description: 'Returns decoded JWT payload' })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid access token' })
-  getMe(@CurrentUser() user: any) {
-    return user;
+  async getMe(@CurrentUser() user: any) {
+    const authUser = await this.queryBus.execute(new GetUserQuery(user.sub));
+    if (!authUser) throw new UnauthorizedException('User not found');
+    return { id: authUser.id, email: authUser.email, createdAt: authUser.createdAt };
   }
 }
+

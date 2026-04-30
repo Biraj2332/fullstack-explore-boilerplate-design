@@ -24,3 +24,25 @@ model User {
 
   @@map("users")
 }
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  userId       String?
+  serviceName  String
+  commandName  String?
+  queryName    String?
+  entityType   String?
+  entityId     String?
+  oldData      Json?
+  newData      Json?
+  ipAddress    String?
+  userAgent    String?
+  success      Boolean  @default(true)
+  errorMessage String?
+  durationMs   Int?
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}

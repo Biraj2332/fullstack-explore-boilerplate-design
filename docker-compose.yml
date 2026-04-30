@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: auth_pass
       POSTGRES_DB: auth_db
     ports:
-      - "5434:5432"       # host:container — postgres always listens on 5432 inside
+      - "5434:5432"
     volumes:
       - auth-db-data:/var/lib/postgresql/data
     healthcheck:
@@ -25,11 +25,47 @@ services:
       POSTGRES_PASSWORD: user_pass
       POSTGRES_DB: user_db
     ports:
-      - "5433:5432"       # host:container — postgres always listens on 5432 inside
+      - "5437:5432"
     volumes:
       - user-db-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U user_user -d user_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  notification-db:
+    image: postgres:16-alpine
+    container_name: notification-db
+    environment:
+      POSTGRES_USER: notif_user
+      POSTGRES_PASSWORD: notif_pass
+      POSTGRES_DB: notification_db
+    ports:
+      - "5435:5432"
+    volumes:
+      - notification-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U notif_user -d notification_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  tweet-db:
+    image: postgres:16-alpine
+    container_name: tweet-db
+    environment:
+      POSTGRES_USER: tweet_user
+      POSTGRES_PASSWORD: tweet_pass
+      POSTGRES_DB: tweet_db
+    ports:
+      - "5436:5432"
+    volumes:
+      - tweet-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tweet_user -d tweet_db"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -47,6 +83,7 @@ services:
       DATABASE_URL: "postgresql://auth_user:auth_pass@auth-db:5432/auth_db?schema=public"
       JWT_ACCESS_SECRET: "access-secret-change-in-production-min-32-chars"
       JWT_REFRESH_SECRET: "refresh-secret-change-in-production-min-32-chars"
+      USER_SERVICE_URL: "http://user-service:3002"
     volumes:
       - ./auth-service/src:/app/src
     depends_on:
@@ -72,6 +109,44 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  notification-service:
+    build:
+      context: ./notification-service
+    container_name: notification-service
+    ports:
+      - "3003:3003"
+    environment:
+      NODE_ENV: development
+      PORT: 3003
+      DATABASE_URL: "postgresql://notif_user:notif_pass@notification-db:5432/notification_db?schema=public"
+      JWT_ACCESS_SECRET: "access-secret-change-in-production-min-32-chars"
+    volumes:
+      - ./notification-service/src:/app/src
+    depends_on:
+      notification-db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  tweet-service:
+    build:
+      context: ./tweet-service
+    container_name: tweet-service
+    ports:
+      - "3004:3004"
+    environment:
+      NODE_ENV: development
+      PORT: 3004
+      DATABASE_URL: "postgresql://tweet_user:tweet_pass@tweet-db:5432/tweet_db?schema=public"
+      JWT_ACCESS_SECRET: "access-secret-change-in-production-min-32-chars"
+      NOTIFICATION_SERVICE_URL: "http://notification-service:3003"
+      USER_SERVICE_URL: "http://user-service:3002"
+    volumes:
+      - ./tweet-service/src:/app/src
+    depends_on:
+      tweet-db:
+        condition: service_healthy
+    restart: unless-stopped
+
   api-gateway:
     build:
       context: ./api-gateway
@@ -84,13 +159,19 @@ services:
       JWT_ACCESS_SECRET: "access-secret-change-in-production-min-32-chars"
       AUTH_SERVICE_URL: "http://auth-service:3001"
       USER_SERVICE_URL: "http://user-service:3002"
+      NOTIFICATION_SERVICE_URL: "http://notification-service:3003"
+      TWEET_SERVICE_URL: "http://tweet-service:3004"
     volumes:
       - ./api-gateway/src:/app/src
     depends_on:
       - auth-service
       - user-service
+      - notification-service
+      - tweet-service
     restart: unless-stopped
 
 volumes:
   auth-db-data:
   user-db-data:
+  notification-db-data:
+  tweet-db-data:

@@ -8,9 +8,20 @@ const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL ?? 'http://localhost:3001'
 @ApiTags('auth-proxy')
 @Controller('auth')
 export class AuthProxyController {
+  @All()
+  async proxyBase(@Req() req: Request, @Res() res: Response) {
+    return this.forward(req, res, '');
+  }
+
   @All('*path')
-  async proxy(@Req() req: Request, @Res() res: Response) {
-    const url = `${AUTH_SERVICE_URL}/api/auth${req.path}`;
+  async proxySub(@Req() req: Request, @Res() res: Response) {
+    const raw = (req.params as any).path ?? '';
+    const subPath = Array.isArray(raw) ? raw.join('/') : raw;
+    return this.forward(req, res, subPath);
+  }
+
+  private async forward(req: Request, res: Response, subPath: string) {
+    const url = `${AUTH_SERVICE_URL}/api/auth${subPath ? '/' + subPath : ''}`;
     try {
       const response = await axios({
         method: req.method as any,
@@ -18,14 +29,12 @@ export class AuthProxyController {
         data: req.body,
         headers: {
           'Content-Type': 'application/json',
-          ...(req.headers.authorization
-            ? { Authorization: req.headers.authorization }
-            : {}),
+          ...(req.headers.authorization ? { Authorization: req.headers.authorization } : {}),
         },
-        validateStatus: () => true, // forward all status codes
+        validateStatus: () => true,
       });
       res.status(response.status).json(response.data);
-    } catch (err) {
+    } catch {
       res.status(502).json({ message: 'Auth service unavailable' });
     }
   }

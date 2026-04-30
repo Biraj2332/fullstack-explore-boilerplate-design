@@ -16,7 +16,7 @@
 | Field | Value |
 |---|---|
 | Host | `localhost` |
-| Port | `5433` |
+| Port | `5437` |
 | Database | `user_db` |
 | Username | `user_user` |
 | Password | `user_pass` |

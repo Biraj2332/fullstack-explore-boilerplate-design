@@ -11,9 +11,20 @@ const USER_SERVICE_URL = process.env.USER_SERVICE_URL ?? 'http://localhost:3002'
 @UseGuards(JwtGuard)
 @Controller('users')
 export class UsersProxyController {
+  @All()
+  async proxyBase(@Req() req: Request, @Res() res: Response) {
+    return this.forward(req, res, '');
+  }
+
   @All('*path')
-  async proxy(@Req() req: Request, @Res() res: Response) {
-    const url = `${USER_SERVICE_URL}/api/users${req.path}`;
+  async proxySub(@Req() req: Request, @Res() res: Response) {
+    const raw = (req.params as any).path ?? '';
+    const subPath = Array.isArray(raw) ? raw.join('/') : raw;
+    return this.forward(req, res, subPath);
+  }
+
+  private async forward(req: Request, res: Response, subPath: string) {
+    const url = `${USER_SERVICE_URL}/api/users${subPath ? '/' + subPath : ''}`;
     try {
       const response = await axios({
         method: req.method as any,
@@ -21,14 +32,12 @@ export class UsersProxyController {
         data: req.body,
         headers: {
           'Content-Type': 'application/json',
-          ...(req.headers.authorization
-            ? { Authorization: req.headers.authorization }
-            : {}),
+          ...(req.headers.authorization ? { Authorization: req.headers.authorization } : {}),
         },
         validateStatus: () => true,
       });
       res.status(response.status).json(response.data);
-    } catch (err) {
+    } catch {
       res.status(502).json({ message: 'User service unavailable' });
     }
   }

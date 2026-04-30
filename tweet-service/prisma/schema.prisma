@@ -1,0 +1,66 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tweet {
+  id            String    @id @default(uuid())
+  userId        String
+  content       String    @db.VarChar(280)
+  mediaUrls     Json      @default("[]")
+  likesCount    Int       @default(0)
+  retweetsCount Int       @default(0)
+  // If this tweet is a retweet, originalTweetId points to the source
+  originalTweetId String?
+  originalTweet   Tweet?  @relation("Retweets", fields: [originalTweetId], references: [id])
+  retweets        Tweet[] @relation("Retweets")
+  likes           Like[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([userId, createdAt])
+  @@map("tweets")
+}
+
+model Like {
+  id        String   @id @default(uuid())
+  userId    String
+  tweetId   String
+  tweet     Tweet    @relation(fields: [tweetId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  // One like per user per tweet
+  @@unique([userId, tweetId])
+  @@index([tweetId])
+  @@map("likes")
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  userId       String?
+  serviceName  String
+  commandName  String?
+  queryName    String?
+  entityType   String?
+  entityId     String?
+  oldData      Json?
+  newData      Json?
+  ipAddress    String?
+  userAgent    String?
+  success      Boolean  @default(true)
+  errorMessage String?
+  durationMs   Int?
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}

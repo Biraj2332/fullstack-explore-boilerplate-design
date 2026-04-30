@@ -1,0 +1,58 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum NotificationType {
+  TWEET_CREATED
+  TWEET_LIKED
+  TWEET_RETWEETED
+  USER_FOLLOWED
+  SYSTEM
+}
+
+model Notification {
+  id         String           @id @default(uuid())
+  userId     String
+  fromUserId String?
+  type       NotificationType
+  title      String
+  body       String
+  entityId   String? // tweet id, user id, etc.
+  entityType String? // "tweet", "user", etc.
+  isRead     Boolean          @default(false)
+  readAt     DateTime?
+  createdAt  DateTime         @default(now())
+  deletedAt  DateTime?
+
+  @@index([userId])
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String?
+  serviceName String
+  commandName String?
+  queryName   String?
+  entityType  String?
+  entityId    String?
+  oldData     Json?
+  newData     Json?
+  ipAddress   String?
+  userAgent   String?
+  success     Boolean  @default(true)
+  errorMessage String?
+  durationMs  Int?
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}
