@@ -170,6 +170,16 @@ services:
       - tweet-service
     restart: unless-stopped
 
+  frontend:
+    build:
+      context: ./frontend
+    container_name: frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - api-gateway
+    restart: unless-stopped
+
 volumes:
   auth-db-data:
   user-db-data:

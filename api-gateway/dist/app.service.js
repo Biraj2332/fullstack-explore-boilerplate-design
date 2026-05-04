@@ -9,8 +9,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppService = void 0;
 const common_1 = require("@nestjs/common");
 let AppService = class AppService {
-    getHello() {
-        return 'Hello World!';
+    getStatus() {
+        return {
+            service: 'api-gateway',
+            status: 'ok',
+            timestamp: new Date().toISOString(),
+        };
     }
 };
 exports.AppService = AppService;
