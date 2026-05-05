@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDeleteTweet, useLikeTweet, useRetweet } from '@/hooks/useTweets';
@@ -51,7 +52,12 @@ export function TweetCard({ tweet, isLiked = false }: Props) {
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs text-gray-500 truncate">{tweet.userId.slice(0, 8)}…</span>
-            <span className="shrink-0 text-xs text-gray-400">{age}</span>
+            <Link
+              to={`/tweet/${tweet.id}`}
+              className="shrink-0 text-xs text-gray-400 hover:text-blue-500 hover:underline"
+            >
+              {age}
+            </Link>
           </div>
 
           <p className="mt-1 whitespace-pre-wrap break-words text-sm text-gray-800">

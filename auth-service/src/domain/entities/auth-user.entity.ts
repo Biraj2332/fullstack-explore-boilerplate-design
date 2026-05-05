@@ -5,6 +5,7 @@ export class AuthUser {
     public readonly id: string,
     public readonly email: string,
     public readonly passwordHash: string,
+    public readonly isAdmin: boolean,
     public readonly createdAt: Date,
     public readonly updatedAt: Date,
     public readonly deletedAt: Date | null,

@@ -2,12 +2,14 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   HttpCode,
   NotFoundException,
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
@@ -16,8 +18,8 @@ import { CurrentUser } from '../decorators/current-user.decorator';
 import { JwtGuard } from '../guards/jwt.guard';
 import { SendNotificationCommand, MarkAsReadCommand, MarkAllAsReadCommand, DeleteNotificationCommand } from '../../application/commands/notification.commands';
 import { GetNotificationQuery, ListUserNotificationsQuery } from '../../application/queries/notification.queries';
+import { PrismaService } from '../../prisma.service';
 
-// Internal DTOs — no auth required
 class InternalTweetCreatedDto { tweetId: string; userId: string; }
 class InternalTweetLikedDto { tweetId: string; tweetOwnerId: string; likerId: string; }
 class InternalTweetRetweetedDto { tweetId: string; tweetOwnerId: string; retweeterId: string; }
@@ -28,6 +30,7 @@ export class NotificationsController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
+    private readonly prisma: PrismaService,
   ) {}
 
   // Internal endpoint — called by tweet-service on tweet creation, no JWT
@@ -117,5 +120,35 @@ export class NotificationsController {
   @HttpCode(204)
   async delete(@Param('id') id: string, @CurrentUser() user: any) {
     await this.commandBus.execute(new DeleteNotificationCommand(id, user.sub));
+  }
+
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth('access-token')
+  @Get('audit-logs')
+  @ApiOperation({ summary: 'List audit logs (admin only)' })
+  async getAuditLogs(
+    @CurrentUser() user: any,
+    @Query('userId') userId?: string,
+    @Query('entityType') entityType?: string,
+    @Query('commandName') commandName?: string,
+    @Query('success') success?: string,
+    @Query('limit') limit = '50',
+    @Query('cursor') cursor?: string,
+  ) {
+    if (!user.isAdmin) throw new ForbiddenException('Admin access required');
+    const take = Math.min(Number(limit) || 50, 200);
+    const where: any = {};
+    if (userId) where.userId = userId;
+    if (entityType) where.entityType = entityType;
+    if (commandName) where.commandName = commandName;
+    if (success !== undefined) where.success = success === 'true';
+    if (cursor) where.createdAt = { lt: new Date(cursor) };
+    const logs = await this.prisma.auditLog.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take,
+    });
+    const nextCursor = logs.length === take ? logs[logs.length - 1].createdAt.toISOString() : undefined;
+    return { logs, nextCursor };
   }
 }

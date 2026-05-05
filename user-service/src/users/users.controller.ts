@@ -2,11 +2,13 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   NotFoundException,
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -31,6 +33,7 @@ import { UpdateUserCommand } from '../application/commands/update-user.command';
 import { SoftDeleteUserCommand } from '../application/commands/soft-delete-user.command';
 import { RestoreUserCommand } from '../application/commands/restore-user.command';
 import { GetUserQuery, GetUserByIdQuery, ListUsersQuery, GetDeletedUsersQuery } from '../application/queries/user.queries';
+import { PrismaService } from '../prisma.service';
 
 @ApiTags('users')
 @Controller('users')
@@ -38,6 +41,7 @@ export class UsersController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
+    private readonly prisma: PrismaService,
   ) {}
 
   // Internal — called by auth-service after registration, no JWT required
@@ -138,5 +142,36 @@ export class UsersController {
     const user = await this.queryBus.execute(new GetUserByIdQuery(id));
     if (!user || user.isDeleted()) throw new NotFoundException('User not found');
     return user;
+  }
+
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth('access-token')
+  @Get('audit-logs')
+  @ApiOperation({ summary: 'List audit logs (admin only)' })
+  @ApiOkResponse({ description: 'Paginated audit log entries from user-service' })
+  async getAuditLogs(
+    @CurrentUser() user: any,
+    @Query('userId') userId?: string,
+    @Query('entityType') entityType?: string,
+    @Query('commandName') commandName?: string,
+    @Query('success') success?: string,
+    @Query('limit') limit = '50',
+    @Query('cursor') cursor?: string,
+  ) {
+    if (!user.isAdmin) throw new ForbiddenException('Admin access required');
+    const take = Math.min(Number(limit) || 50, 200);
+    const where: any = {};
+    if (userId) where.userId = userId;
+    if (entityType) where.entityType = entityType;
+    if (commandName) where.commandName = commandName;
+    if (success !== undefined) where.success = success === 'true';
+    if (cursor) where.createdAt = { lt: new Date(cursor) };
+    const logs = await this.prisma.auditLog.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take,
+    });
+    const nextCursor = logs.length === take ? logs[logs.length - 1].createdAt.toISOString() : undefined;
+    return { logs, nextCursor };
   }
 }

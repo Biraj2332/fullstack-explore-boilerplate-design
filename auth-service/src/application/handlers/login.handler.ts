@@ -41,7 +41,7 @@ export class LoginHandler implements ICommandHandler<LoginCommand, LoginResult> 
     }
 
     const accessToken = this.jwtService.sign(
-      { sub: user.id, email: user.email },
+      { sub: user.id, email: user.email, isAdmin: user.isAdmin },
       { secret: process.env.JWT_ACCESS_SECRET, expiresIn: '15m' },
     );
     const refreshToken = this.jwtService.sign(

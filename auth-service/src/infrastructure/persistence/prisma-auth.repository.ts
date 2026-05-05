@@ -44,6 +44,6 @@ export class PrismaAuthRepository implements IAuthRepository {
   }
 
   private toEntity(row: any): AuthUser {
-    return new AuthUser(row.id, row.email, row.passwordHash, row.createdAt, row.updatedAt, row.deletedAt);
+    return new AuthUser(row.id, row.email, row.passwordHash, row.isAdmin ?? false, row.createdAt, row.updatedAt, row.deletedAt);
   }
 }

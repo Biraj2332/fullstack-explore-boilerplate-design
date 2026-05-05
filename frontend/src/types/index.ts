@@ -2,6 +2,7 @@
 export interface AuthUser {
   id: string;
   email: string;
+  isAdmin: boolean;
   createdAt: string;
 }
 
@@ -92,5 +93,31 @@ export interface UserSearchResult {
   name: string | null;
   email: string;
   avatarUrl: string | null;
+}
+
+// ─── Audit Log ─────────────────────────────────────────────────────────────────
+export type AuditService = 'auth' | 'users' | 'tweets' | 'notifications';
+
+export interface AuditLog {
+  id: string;
+  userId: string | null;
+  serviceName: string;
+  commandName: string | null;
+  queryName: string | null;
+  entityType: string | null;
+  entityId: string | null;
+  oldData: Record<string, unknown> | null;
+  newData: Record<string, unknown> | null;
+  ipAddress: string | null;
+  userAgent: string | null;
+  success: boolean;
+  errorMessage: string | null;
+  durationMs: number | null;
+  createdAt: string;
+}
+
+export interface AuditLogsResponse {
+  logs: AuditLog[];
+  nextCursor: string | undefined;
 }
 

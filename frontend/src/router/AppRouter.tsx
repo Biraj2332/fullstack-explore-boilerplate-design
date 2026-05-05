@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Navbar } from '@/components/layout/Navbar';
 import { PrivateRoute } from './PrivateRoute';
 import { PublicRoute } from './PublicRoute';
+import { AdminRoute } from './AdminRoute';
 import { Spinner } from '@/components/ui/Spinner';
 
 const LoginPage = lazy(() => import('@/pages/LoginPage'));
@@ -10,6 +11,8 @@ const RegisterPage = lazy(() => import('@/pages/RegisterPage'));
 const FeedPage = lazy(() => import('@/pages/FeedPage'));
 const ProfilePage = lazy(() => import('@/pages/ProfilePage'));
 const NotificationsPage = lazy(() => import('@/pages/NotificationsPage'));
+const TweetDetailPage = lazy(() => import('@/pages/TweetDetailPage'));
+const AdminAuditPage = lazy(() => import('@/pages/AdminAuditPage'));
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'));
 
 function PageFallback() {
@@ -40,7 +43,14 @@ export function AppRouter() {
             <Route element={<PrivateRoute />}>
               <Route path="/feed" element={<FeedPage />} />
               <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/profile/edit" element={<ProfilePage />} />
               <Route path="/notifications" element={<NotificationsPage />} />
+              <Route path="/tweet/:id" element={<TweetDetailPage />} />
+            </Route>
+
+            {/* Admin-only routes */}
+            <Route element={<AdminRoute />}>
+              <Route path="/admin/audit" element={<AdminAuditPage />} />
             </Route>
 
             <Route path="*" element={<NotFoundPage />} />

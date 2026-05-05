@@ -37,6 +37,16 @@ export function Navbar() {
             {/* Notifications bell */}
             <NotificationsDropdown />
 
+            {/* Admin link */}
+            {user?.isAdmin && (
+              <Link
+                to="/admin/audit"
+                className="rounded-md bg-yellow-100 px-2.5 py-1 text-xs font-semibold text-yellow-800 hover:bg-yellow-200"
+              >
+                Admin
+              </Link>
+            )}
+
             <button
               onClick={handleLogout}
               className="rounded-md bg-gray-100 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-200"

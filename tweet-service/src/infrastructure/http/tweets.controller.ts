@@ -3,6 +3,7 @@ import {
   ConflictException,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   HttpCode,
   HttpStatus,
@@ -23,6 +24,7 @@ import { CreateTweetDto, RetweetDto, UpdateTweetDto } from './dto/tweet.dto';
 
 import { CreateTweetCommand, DeleteTweetCommand, LikeTweetCommand, RetweetCommand, UnlikeTweetCommand, UpdateTweetCommand } from '../../application/commands/tweet.commands';
 import { GetLikesCountQuery, GetTweetQuery, ListTimelineQuery, ListUserTweetsQuery } from '../../application/queries/tweet.queries';
+import { PrismaService } from '../../prisma.service';
 
 @ApiTags('tweets')
 @ApiBearerAuth('access-token')
@@ -32,6 +34,7 @@ export class TweetsController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
+    private readonly prisma: PrismaService,
   ) {}
 
   @Post()
@@ -123,5 +126,34 @@ export class TweetsController {
   ) {
     const ids = userIds ? userIds.split(',') : [];
     return this.queryBus.execute(new ListTimelineQuery(ids, Number(limit), cursor));
+  }
+
+  @Get('audit-logs')
+  @ApiOperation({ summary: 'List audit logs (admin only)' })
+  @ApiOkResponse({ description: 'Paginated audit log entries from tweet-service' })
+  async getAuditLogs(
+    @CurrentUser() user: any,
+    @Query('userId') userId?: string,
+    @Query('entityType') entityType?: string,
+    @Query('commandName') commandName?: string,
+    @Query('success') success?: string,
+    @Query('limit') limit = '50',
+    @Query('cursor') cursor?: string,
+  ) {
+    if (!user.isAdmin) throw new ForbiddenException('Admin access required');
+    const take = Math.min(Number(limit) || 50, 200);
+    const where: any = {};
+    if (userId) where.userId = userId;
+    if (entityType) where.entityType = entityType;
+    if (commandName) where.commandName = commandName;
+    if (success !== undefined) where.success = success === 'true';
+    if (cursor) where.createdAt = { lt: new Date(cursor) };
+    const logs = await this.prisma.auditLog.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take,
+    });
+    const nextCursor = logs.length === take ? logs[logs.length - 1].createdAt.toISOString() : undefined;
+    return { logs, nextCursor };
   }
 }

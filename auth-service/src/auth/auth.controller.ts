@@ -2,10 +2,12 @@ import {
   Body,
   ConflictException,
   Controller,
+  ForbiddenException,
   Get,
   HttpCode,
   HttpStatus,
   Post,
+  Query,
   Req,
   UnauthorizedException,
   UseGuards,
@@ -27,6 +29,7 @@ import { RefreshDto } from './dto/refresh.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtGuard } from './guards/jwt.guard';
 
+import { PrismaService } from '../prisma.service';
 import { RegisterCommand } from '../application/commands/register.command';
 import { LoginCommand } from '../application/commands/login.command';
 import { LogoutCommand } from '../application/commands/logout.command';
@@ -39,6 +42,7 @@ export class AuthController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
+    private readonly prisma: PrismaService,
   ) {}
 
   @Post('register')
@@ -102,7 +106,38 @@ export class AuthController {
   async getMe(@CurrentUser() user: any) {
     const authUser = await this.queryBus.execute(new GetUserQuery(user.sub));
     if (!authUser) throw new UnauthorizedException('User not found');
-    return { id: authUser.id, email: authUser.email, createdAt: authUser.createdAt };
+    return { id: authUser.id, email: authUser.email, isAdmin: authUser.isAdmin, createdAt: authUser.createdAt };
+  }
+
+  @UseGuards(JwtGuard)
+  @Get('audit-logs')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'List audit logs (admin only)' })
+  @ApiOkResponse({ description: 'Paginated audit log entries' })
+  async getAuditLogs(
+    @CurrentUser() user: any,
+    @Query('userId') userId?: string,
+    @Query('entityType') entityType?: string,
+    @Query('commandName') commandName?: string,
+    @Query('success') success?: string,
+    @Query('limit') limit = '50',
+    @Query('cursor') cursor?: string,
+  ) {
+    if (!user.isAdmin) throw new ForbiddenException('Admin access required');
+    const take = Math.min(Number(limit) || 50, 200);
+    const where: any = {};
+    if (userId) where.userId = userId;
+    if (entityType) where.entityType = entityType;
+    if (commandName) where.commandName = commandName;
+    if (success !== undefined) where.success = success === 'true';
+    if (cursor) where.createdAt = { lt: new Date(cursor) };
+    const logs = await this.prisma.auditLog.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take,
+    });
+    const nextCursor = logs.length === take ? logs[logs.length - 1].createdAt.toISOString() : undefined;
+    return { logs, nextCursor };
   }
 }
 

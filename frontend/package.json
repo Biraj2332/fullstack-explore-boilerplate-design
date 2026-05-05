@@ -1,31 +1,4 @@
-INSERT INTO notifications (
-    id,
-    userId,
-    fromUserId,
-    type,
-    title,
-    body,
-    entityId,
-    entityType,
-    isRead,
-    readAt,
-    createdAt,
-    deletedAt
-  )
-VALUES (
-    'id:text',
-    'userId:text',
-    'fromUserId:text',
-    'type:USER-DEFINED',
-    'title:text',
-    'body:text',
-    'entityId:text',
-    'entityType:text',
-    isRead:boolean,
-    'readAt:timestamp without time zone',
-    'createdAt:timestamp without time zone',
-    'deletedAt:timestamp without time zone'
-  );{
+{
   "name": "frontend",
   "private": true,
   "version": "0.0.1",
