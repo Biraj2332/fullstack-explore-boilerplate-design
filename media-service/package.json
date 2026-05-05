@@ -1,0 +1,45 @@
+{
+  "name": "media-service",
+  "version": "0.0.1",
+  "description": "Media Service — file upload, image processing, storage",
+  "author": "",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "build": "nest build",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "start": "nest start",
+    "start:dev": "nest start --watch",
+    "start:prod": "node dist/main"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.0.1",
+    "@nestjs/core": "^11.0.1",
+    "@nestjs/cqrs": "^11.0.3",
+    "@nestjs/jwt": "^11.0.2",
+    "@nestjs/platform-express": "^11.1.19",
+    "@nestjs/swagger": "^11.4.2",
+    "@prisma/client": "^5.22.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
+    "multer": "^1.4.5-lts.1",
+    "neverthrow": "^8.2.0",
+    "prisma": "^5.22.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1",
+    "sharp": "^0.33.5",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.0",
+    "@nestjs/schematics": "^11.0.0",
+    "@types/express": "^5.0.0",
+    "@types/multer": "^1.4.12",
+    "@types/node": "^24.0.0",
+    "@types/sharp": "^0.31.1",
+    "ts-loader": "^9.5.2",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.7.3"
+  }
+}

@@ -1,0 +1,47 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Media {
+  id          String    @id @default(uuid())
+  userId      String
+  entityType  String    // "tweet" | "avatar"
+  entityId    String?
+  fileName    String
+  fileSize    Int
+  mimeType    String
+  // Relative paths inside the uploads volume
+  originalPath   String
+  thumbnailPath  String?   // 150×150 WebP
+  mediumPath     String?   // 500×500 WebP
+  largePath      String?   // 1024×1024 WebP
+  metadata    Json      @default("{}")
+  createdAt   DateTime  @default(now())
+  deletedAt   DateTime?
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@map("media")
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  userId       String?
+  serviceName  String
+  commandName  String?
+  entityType   String?
+  entityId     String?
+  success      Boolean  @default(true)
+  errorMessage String?
+  durationMs   Int?
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@map("audit_logs")
+}

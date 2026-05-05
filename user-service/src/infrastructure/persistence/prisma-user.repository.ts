@@ -43,6 +43,22 @@ export class PrismaUserRepository implements IUserRepository {
     await this.prisma.user.update({ where: { authId }, data: { deletedAt: null } });
   }
 
+  async search(q: string, limit: number): Promise<UserProfile[]> {
+    // Uses GIN trigram index added by migration for efficient ILIKE
+    const rows = await this.prisma.user.findMany({
+      where: {
+        deletedAt: null,
+        OR: [
+          { name:  { contains: q, mode: 'insensitive' } },
+          { email: { contains: q, mode: 'insensitive' } },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+    return rows.map(r => this.toEntity(r));
+  }
+
   private toEntity(row: any): UserProfile {
     return new UserProfile(row.id, row.authId, row.email, row.name, row.bio, row.avatarUrl, row.createdAt, row.updatedAt, row.deletedAt);
   }

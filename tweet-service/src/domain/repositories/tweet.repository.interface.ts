@@ -14,6 +14,7 @@ export interface ITweetRepository {
   addLike(userId: string, tweetId: string): Promise<void>;
   removeLike(userId: string, tweetId: string): Promise<void>;
   getLikesCount(tweetId: string): Promise<number>;
+  search(q: string, limit: number, cursor?: string): Promise<Tweet[]>;
 }
 
 export const TWEET_REPOSITORY = Symbol('ITweetRepository');

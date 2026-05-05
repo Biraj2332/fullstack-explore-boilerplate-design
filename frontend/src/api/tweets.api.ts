@@ -51,4 +51,11 @@ export const tweetsApi = {
     const { data } = await api.get(`/tweets/${id}/likes`);
     return data;
   },
+
+  search: async (q: string, limit = 20, cursor?: string): Promise<{ tweets: Tweet[]; nextCursor: string | null }> => {
+    const params: Record<string, string | number> = { q, limit };
+    if (cursor) params.cursor = cursor;
+    const { data } = await api.get('/tweets/search', { params });
+    return data;
+  },
 };

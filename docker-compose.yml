@@ -53,6 +53,24 @@ services:
       retries: 5
     restart: unless-stopped
 
+  media-db:
+    image: postgres:16-alpine
+    container_name: media-db
+    environment:
+      POSTGRES_USER: media_user
+      POSTGRES_PASSWORD: media_pass
+      POSTGRES_DB: media_db
+    ports:
+      - "5438:5432"
+    volumes:
+      - media-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U media_user -d media_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   tweet-db:
     image: postgres:16-alpine
     container_name: tweet-db
@@ -147,6 +165,26 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  media-service:
+    build:
+      context: ./media-service
+    container_name: media-service
+    ports:
+      - "3005:3005"
+    environment:
+      NODE_ENV: development
+      PORT: 3005
+      DATABASE_URL: "postgresql://media_user:media_pass@media-db:5432/media_db?schema=public"
+      JWT_ACCESS_SECRET: "access-secret-change-in-production-min-32-chars"
+      UPLOADS_DIR: /app/uploads
+    volumes:
+      - ./media-service/src:/app/src
+      - media-uploads:/app/uploads
+    depends_on:
+      media-db:
+        condition: service_healthy
+    restart: unless-stopped
+
   api-gateway:
     build:
       context: ./api-gateway
@@ -161,6 +199,7 @@ services:
       USER_SERVICE_URL: "http://user-service:3002"
       NOTIFICATION_SERVICE_URL: "http://notification-service:3003"
       TWEET_SERVICE_URL: "http://tweet-service:3004"
+      MEDIA_SERVICE_URL: "http://media-service:3005"
     volumes:
       - ./api-gateway/src:/app/src
     depends_on:
@@ -168,6 +207,7 @@ services:
       - user-service
       - notification-service
       - tweet-service
+      - media-service
     restart: unless-stopped
 
   frontend:
@@ -185,3 +225,5 @@ volumes:
   user-db-data:
   notification-db-data:
   tweet-db-data:
+  media-db-data:
+  media-uploads:

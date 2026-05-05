@@ -13,3 +13,10 @@ export class ListUsersQuery implements IQuery {
 }
 
 export class GetDeletedUsersQuery implements IQuery {}
+
+export class SearchUsersQuery implements IQuery {
+  constructor(
+    public readonly q: string,
+    public readonly limit = 20,
+  ) {}
+}

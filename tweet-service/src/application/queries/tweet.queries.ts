@@ -19,3 +19,11 @@ export class ListTimelineQuery implements IQuery {
 export class GetLikesCountQuery implements IQuery {
   constructor(public readonly tweetId: string) {}
 }
+
+export class SearchTweetsQuery implements IQuery {
+  constructor(
+    public readonly q: string,
+    public readonly limit = 20,
+    public readonly cursor?: string,
+  ) {}
+}

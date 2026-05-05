@@ -10,7 +10,7 @@ import { UsersService } from './users.service';
 import { CreateUserHandler } from '../application/handlers/create-user.handler';
 import { UpdateUserHandler } from '../application/handlers/update-user.handler';
 import { SoftDeleteUserHandler, RestoreUserHandler } from '../application/handlers/user-lifecycle.handler';
-import { GetUserHandler, GetUserByIdHandler, ListUsersHandler, GetDeletedUsersHandler } from '../application/handlers/user-query.handler';
+import { GetUserHandler, GetUserByIdHandler, ListUsersHandler, GetDeletedUsersHandler, SearchUsersHandler } from '../application/handlers/user-query.handler';
 
 // Infrastructure
 import { PrismaUserRepository } from '../infrastructure/persistence/prisma-user.repository';
@@ -18,7 +18,7 @@ import { AuditService } from '../infrastructure/audit/audit.service';
 import { USER_REPOSITORY } from '../domain/repositories/user.repository.interface';
 
 const CommandHandlers = [CreateUserHandler, UpdateUserHandler, SoftDeleteUserHandler, RestoreUserHandler];
-const QueryHandlers = [GetUserHandler, GetUserByIdHandler, ListUsersHandler, GetDeletedUsersHandler];
+const QueryHandlers = [GetUserHandler, GetUserByIdHandler, ListUsersHandler, GetDeletedUsersHandler, SearchUsersHandler];
 
 @Module({
   imports: [CqrsModule, JwtModule.register({})],

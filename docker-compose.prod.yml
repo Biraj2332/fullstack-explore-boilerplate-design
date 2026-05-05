@@ -1,0 +1,137 @@
+# ============================================================
+# docker-compose.prod.yml — Production overlay
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.production up -d
+# ============================================================
+#
+# This file overrides docker-compose.yml for production:
+#   • NODE_ENV=production on every service
+#   • Secrets read from environment variables (set via --env-file)
+#   • Hot-reload src volume mounts removed
+#   • No DB ports exposed to the host
+#   • restart: always (instead of unless-stopped)
+#   • Resource limits on every service
+# ============================================================
+
+services:
+
+  # ── Databases ──────────────────────────────────────────────
+  auth-db:
+    environment:
+      POSTGRES_PASSWORD: ${AUTH_DB_PASS}
+    ports: []        # not exposed to host in production
+    restart: always
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 512M }
+
+  user-db:
+    environment:
+      POSTGRES_PASSWORD: ${USER_DB_PASS}
+    ports: []
+    restart: always
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 512M }
+
+  notification-db:
+    environment:
+      POSTGRES_PASSWORD: ${NOTIFICATION_DB_PASS}
+    ports: []
+    restart: always
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 512M }
+
+  tweet-db:
+    environment:
+      POSTGRES_PASSWORD: ${TWEET_DB_PASS}
+    ports: []
+    restart: always
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 512M }
+
+  media-db:
+    environment:
+      POSTGRES_PASSWORD: ${MEDIA_DB_PASS}
+    ports: []
+    restart: always
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 512M }
+
+  # ── Application services ───────────────────────────────────
+  auth-service:
+    volumes: []      # remove hot-reload src mount
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${AUTH_DATABASE_URL}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+    restart: always
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 512M }
+
+  user-service:
+    volumes: []
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${USER_DATABASE_URL}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+    restart: always
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 512M }
+
+  notification-service:
+    volumes: []
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${NOTIFICATION_DATABASE_URL}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+    restart: always
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 512M }
+
+  tweet-service:
+    volumes: []
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${TWEET_DATABASE_URL}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+    restart: always
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 512M }
+
+  media-service:
+    volumes:
+      - media-uploads:/app/uploads   # keep the data volume, drop src mount
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${MEDIA_DATABASE_URL}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      UPLOADS_DIR: /app/uploads
+    restart: always
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 1G }
+
+  api-gateway:
+    volumes: []
+    environment:
+      NODE_ENV: production
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+    restart: always
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 512M }
+
+  frontend:
+    restart: always
+    deploy:
+      resources:
+        limits: { cpus: "0.25", memory: 128M }

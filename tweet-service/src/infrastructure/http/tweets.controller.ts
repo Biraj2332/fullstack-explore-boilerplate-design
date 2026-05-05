@@ -23,7 +23,7 @@ import { JwtGuard } from '../guards/jwt.guard';
 import { CreateTweetDto, RetweetDto, UpdateTweetDto } from './dto/tweet.dto';
 
 import { CreateTweetCommand, DeleteTweetCommand, LikeTweetCommand, RetweetCommand, UnlikeTweetCommand, UpdateTweetCommand } from '../../application/commands/tweet.commands';
-import { GetLikesCountQuery, GetTweetQuery, ListTimelineQuery, ListUserTweetsQuery } from '../../application/queries/tweet.queries';
+import { GetLikesCountQuery, GetTweetQuery, ListTimelineQuery, ListUserTweetsQuery, SearchTweetsQuery } from '../../application/queries/tweet.queries';
 import { PrismaService } from '../../prisma.service';
 
 @ApiTags('tweets')
@@ -155,5 +155,19 @@ export class TweetsController {
     });
     const nextCursor = logs.length === take ? logs[logs.length - 1].createdAt.toISOString() : undefined;
     return { logs, nextCursor };
+  }
+
+  @Get('search')
+  @ApiOperation({ summary: 'Full-text search tweets by keyword' })
+  @ApiOkResponse({ description: 'Matching tweets ranked by relevance' })
+  async search(
+    @Query('q') q: string,
+    @Query('limit') limit = 20,
+    @Query('cursor') cursor?: string,
+  ) {
+    if (!q?.trim()) return [];
+    const tweets = await this.queryBus.execute(new SearchTweetsQuery(q.trim(), Number(limit), cursor));
+    const nextCursor = tweets.length === Number(limit) ? tweets[tweets.length - 1].id : undefined;
+    return { tweets, nextCursor };
   }
 }

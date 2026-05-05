@@ -14,6 +14,7 @@ const NotificationsPage = lazy(() => import('@/pages/NotificationsPage'));
 const TweetDetailPage = lazy(() => import('@/pages/TweetDetailPage'));
 const AdminAuditPage = lazy(() => import('@/pages/AdminAuditPage'));
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'));
+const SearchPage = lazy(() => import('@/pages/SearchPage'));
 
 function PageFallback() {
   return (
@@ -46,6 +47,7 @@ export function AppRouter() {
               <Route path="/profile/edit" element={<ProfilePage />} />
               <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/tweet/:id" element={<TweetDetailPage />} />
+              <Route path="/search" element={<SearchPage />} />
             </Route>
 
             {/* Admin-only routes */}

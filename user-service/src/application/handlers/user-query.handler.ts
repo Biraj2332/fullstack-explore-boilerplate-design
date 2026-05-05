@@ -1,6 +1,6 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
-import { GetUserQuery, GetUserByIdQuery, ListUsersQuery, GetDeletedUsersQuery } from '../queries/user.queries';
+import { GetUserQuery, GetUserByIdQuery, ListUsersQuery, GetDeletedUsersQuery, SearchUsersQuery } from '../queries/user.queries';
 import { USER_REPOSITORY } from '../../domain/repositories/user.repository.interface';
 import type { IUserRepository } from '../../domain/repositories/user.repository.interface';
 import { UserProfile } from '../../domain/entities/user-profile.entity';
@@ -34,5 +34,13 @@ export class GetDeletedUsersHandler implements IQueryHandler<GetDeletedUsersQuer
   constructor(@Inject(USER_REPOSITORY) private readonly userRepo: IUserRepository) {}
   execute(): Promise<UserProfile[]> {
     return this.userRepo.findAll(true).then(users => users.filter(u => u.isDeleted()));
+  }
+}
+
+@QueryHandler(SearchUsersQuery)
+export class SearchUsersHandler implements IQueryHandler<SearchUsersQuery> {
+  constructor(@Inject(USER_REPOSITORY) private readonly userRepo: IUserRepository) {}
+  execute(q: SearchUsersQuery): Promise<UserProfile[]> {
+    return this.userRepo.search(q.q, q.limit);
   }
 }

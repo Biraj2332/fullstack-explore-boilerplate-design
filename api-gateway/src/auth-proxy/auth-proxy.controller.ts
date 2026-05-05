@@ -1,4 +1,5 @@
 import { All, Controller, Req, Res } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags } from '@nestjs/swagger';
 import axios from 'axios';
 import type { Request, Response } from 'express';
@@ -6,6 +7,8 @@ import type { Request, Response } from 'express';
 const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL ?? 'http://localhost:3001';
 
 @ApiTags('auth-proxy')
+// Stricter limit for auth endpoints: 5 requests per 15 minutes per IP
+@Throttle({ default: { ttl: 900_000, limit: 5 } })
 @Controller('auth')
 export class AuthProxyController {
   @All()

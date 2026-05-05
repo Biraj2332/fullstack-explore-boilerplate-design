@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { NotificationsDropdown } from '@/components/notifications/NotificationsDropdown';
@@ -5,10 +6,18 @@ import { NotificationsDropdown } from '@/components/notifications/NotificationsD
 export function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleLogout = async () => {
     await logout();
     navigate('/login');
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = searchQuery.trim();
+    if (!q) return;
+    navigate(`/search?q=${encodeURIComponent(q)}`);
   };
 
   return (
@@ -18,6 +27,25 @@ export function Navbar() {
         <Link to="/" className="text-xl font-bold text-blue-600">
           FullStack
         </Link>
+
+        {/* Search bar (authenticated only) */}
+        {isAuthenticated && (
+          <form onSubmit={handleSearch} className="hidden sm:flex items-center gap-1">
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search…"
+              className="w-48 rounded-md border border-gray-300 px-3 py-1 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200"
+            />
+            <button
+              type="submit"
+              className="rounded-md bg-gray-100 px-2.5 py-1 text-sm text-gray-600 hover:bg-gray-200"
+            >
+              Go
+            </button>
+          </form>
+        )}
 
         {isAuthenticated ? (
           <nav className="flex items-center gap-4">

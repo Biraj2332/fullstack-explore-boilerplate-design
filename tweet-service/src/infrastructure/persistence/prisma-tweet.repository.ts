@@ -75,6 +75,23 @@ export class PrismaTweetRepository implements ITweetRepository {
     return this.prisma.like.count({ where: { tweetId } });
   }
 
+  async search(q: string, limit: number, cursor?: string): Promise<Tweet[]> {
+    // Use PostgreSQL full-text search via Prisma raw query for GIN index support
+    const cursorCondition = cursor ? `AND t."createdAt" < (SELECT "createdAt" FROM tweets WHERE id = '${cursor}')` : '';
+    const rows: any[] = await this.prisma.$queryRawUnsafe(
+      `SELECT * FROM tweets t
+       WHERE t."deletedAt" IS NULL
+         AND to_tsvector('english', t.content) @@ plainto_tsquery('english', $1)
+         ${cursorCondition}
+       ORDER BY ts_rank(to_tsvector('english', t.content), plainto_tsquery('english', $1)) DESC,
+                t."createdAt" DESC
+       LIMIT $2`,
+      q,
+      limit,
+    );
+    return rows.map((r) => this.toEntity(r));
+  }
+
   private toEntity(row: any): Tweet {
     return new Tweet(row.id, row.userId, row.content, row.mediaUrls as string[] ?? [], row.likesCount, row.retweetsCount, row.originalTweetId, row.createdAt, row.updatedAt, row.deletedAt);
   }

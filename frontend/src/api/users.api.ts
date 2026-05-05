@@ -29,4 +29,9 @@ export const usersApi = {
     const { data } = await api.get('/users/list');
     return data;
   },
+
+  search: async (q: string, limit = 10): Promise<UserProfile[]> => {
+    const { data } = await api.get('/users/search', { params: { q, limit } });
+    return data;
+  },
 };

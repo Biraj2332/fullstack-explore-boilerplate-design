@@ -32,7 +32,7 @@ import { CreateUserCommand } from '../application/commands/create-user.command';
 import { UpdateUserCommand } from '../application/commands/update-user.command';
 import { SoftDeleteUserCommand } from '../application/commands/soft-delete-user.command';
 import { RestoreUserCommand } from '../application/commands/restore-user.command';
-import { GetUserQuery, GetUserByIdQuery, ListUsersQuery, GetDeletedUsersQuery } from '../application/queries/user.queries';
+import { GetUserQuery, GetUserByIdQuery, ListUsersQuery, GetDeletedUsersQuery, SearchUsersQuery } from '../application/queries/user.queries';
 import { PrismaService } from '../prisma.service';
 
 @ApiTags('users')
@@ -173,5 +173,18 @@ export class UsersController {
     });
     const nextCursor = logs.length === take ? logs[logs.length - 1].createdAt.toISOString() : undefined;
     return { logs, nextCursor };
+  }
+
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth('access-token')
+  @Get('search')
+  @ApiOperation({ summary: 'Search users by name or email' })
+  @ApiOkResponse({ description: 'Matching user profiles' })
+  async search(
+    @Query('q') q: string,
+    @Query('limit') limit = 20,
+  ) {
+    if (!q?.trim()) return [];
+    return this.queryBus.execute(new SearchUsersQuery(q.trim(), Number(limit)));
   }
 }

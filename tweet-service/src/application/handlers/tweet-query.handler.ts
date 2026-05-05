@@ -1,6 +1,6 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
-import { GetTweetQuery, ListUserTweetsQuery, ListTimelineQuery, GetLikesCountQuery } from '../queries/tweet.queries';
+import { GetTweetQuery, ListUserTweetsQuery, ListTimelineQuery, GetLikesCountQuery, SearchTweetsQuery } from '../queries/tweet.queries';
 import { TWEET_REPOSITORY } from '../../domain/repositories/tweet.repository.interface';
 import type { ITweetRepository } from '../../domain/repositories/tweet.repository.interface';
 import { Tweet } from '../../domain/entities/tweet.entity';
@@ -34,5 +34,13 @@ export class GetLikesCountHandler implements IQueryHandler<GetLikesCountQuery> {
   constructor(@Inject(TWEET_REPOSITORY) private readonly tweetRepo: ITweetRepository) {}
   execute(query: GetLikesCountQuery): Promise<number> {
     return this.tweetRepo.getLikesCount(query.tweetId);
+  }
+}
+
+@QueryHandler(SearchTweetsQuery)
+export class SearchTweetsHandler implements IQueryHandler<SearchTweetsQuery> {
+  constructor(@Inject(TWEET_REPOSITORY) private readonly tweetRepo: ITweetRepository) {}
+  execute(query: SearchTweetsQuery): Promise<Tweet[]> {
+    return this.tweetRepo.search(query.q, query.limit, query.cursor);
   }
 }
