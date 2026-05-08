@@ -750,18 +750,7 @@ docker compose down
 - [ ] At least one collaboration point contains a short supporting inline comment
 - [ ] Comments do not replace code clarity; they explain architecture, not trivia
 
-## 8. README Quality Checklist
-
-- [ ] 98% theory, 2% code examples
-- [ ] Each pattern has a real-world analogy
-- [ ] Each pattern has current and planned file locations
-- [ ] Each pattern has ASCII diagrams or sketch descriptions
-- [ ] Comment format is documented
-- [ ] Navigation guide is included
-- [ ] Pattern verification guidance is included
-- [ ] CQRS and Hexagonal interaction is explained for each creational pattern
-
-## 9. References And Further Learning
+### 8. References And Further Learning
 
 ### Books
 
